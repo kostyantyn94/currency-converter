@@ -2,8 +2,6 @@
 
 A modern currency converter app built with **Next.js** that allows users to convert currencies in real-time and view exchange rates.
 
-![Currency Converter Screenshot](./screenshot.png) *(Replace with an actual screenshot when available)*
-
 ## ✨ Features
 - ✅ **Real-time currency conversion**
 - 🔄 **Swap currencies easily**
@@ -61,7 +59,7 @@ vercel deploy
 ## 📞 Contact
 For any inquiries, feel free to reach out:
 - **GitHub Issues** – [Report bugs or suggest features](https://github.com/kostyantyn94)
-- **Email** – kostynatyn.karimov@gmail.com *(optional)*
+- **Email** – kostynatyn.karimov@gmail.com
 
 ---
 
