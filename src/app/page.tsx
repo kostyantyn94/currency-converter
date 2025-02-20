@@ -1,101 +1,175 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect } from "react";
+import Head from "next/head";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+
+const API_KEY = process.env.NEXT_PUBLIC_EXCHANGE_API_KEY;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const FULL_API_URL = `${API_URL}/${API_KEY}/latest/`;
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    const [currencies, setCurrencies] = useState<string[]>([]);
+    const [baseCurrency, setBaseCurrency] = useState("USD");
+    const [targetCurrency, setTargetCurrency] = useState("EUR");
+    const [amount, setAmount] = useState(1);
+    const [inputAmount, setInputAmount] = useState("1");
+    const [conversionResult, setConversionResult] = useState<number | null>(null);
+    const [rates, setRates] = useState<Record<string, number>>({});
+    const [history, setHistory] = useState<{ base: string; target: string; amount: number; result: number }[]>([]);
+    const router = useRouter();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    useEffect(() => {
+        axios.get(`${FULL_API_URL}${baseCurrency}`)
+            .then(response => {
+                if (response.data.conversion_rates) {
+                    setRates(response.data.conversion_rates);
+                    setCurrencies(Object.keys(response.data.conversion_rates));
+                }
+            })
+            .catch(error => console.error("Error fetching rates:", error));
+    }, [baseCurrency]);
+
+    useEffect(() => {
+        const storedHistory = localStorage.getItem("conversionHistory");
+        if (storedHistory) {
+            setHistory(JSON.parse(storedHistory));
+        }
+    }, []);
+
+    const convertCurrency = () => {
+        const numAmount = parseFloat(inputAmount);
+        if (rates[targetCurrency] && !isNaN(numAmount) && numAmount > 0) {
+            const result = numAmount * rates[targetCurrency];
+            setAmount(numAmount);
+            setConversionResult(result);
+
+            const newEntry = { base: baseCurrency, target: targetCurrency, amount: numAmount, result };
+            const updatedHistory = [newEntry, ...history].slice(0, 5);
+            setHistory(updatedHistory);
+            localStorage.setItem("conversionHistory", JSON.stringify(updatedHistory));
+        }
+    };
+
+    const swapCurrencies = () => {
+        const newBaseCurrency = targetCurrency;
+        const newTargetCurrency = baseCurrency;
+        const newAmount = conversionResult !== null ? conversionResult.toFixed(2) : inputAmount;
+
+        setBaseCurrency(newBaseCurrency);
+        setTargetCurrency(newTargetCurrency);
+        setInputAmount(newAmount);
+        setAmount(parseFloat(newAmount));
+        setConversionResult(null);
+    };
+
+    const clearHistory = () => {
+        setHistory([]);
+        localStorage.removeItem("conversionHistory");
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 text-black">
+            <div className="container mx-auto p-6 max-w-lg bg-white shadow-md rounded-lg text-center">
+                <Head>
+                    <title>Currency Converter</title>
+                </Head>
+
+                <h1 className="text-3xl font-bold mb-6 text-gray-800">💱 Currency Converter</h1>
+
+                <div className="flex flex-col gap-6">
+                    {/* Поле ввода */}
+                    <div className="flex flex-col bg-gray-50 p-4 rounded-lg border">
+                        <label className="text-lg font-semibold text-left text-gray-700">Amount:</label>
+                        <input
+                            className="p-3 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            type="number"
+                            value={inputAmount}
+                            onChange={(e) => setInputAmount(e.target.value)}
+                            placeholder="Enter amount"
+                        />
+                    </div>
+
+                    <div className="flex flex-col bg-gray-50 p-4 rounded-lg border">
+                        <label className="text-lg font-semibold text-left text-gray-700">From Currency:</label>
+                        <select
+                            className="p-3 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={baseCurrency}
+                            onChange={(e) => setBaseCurrency(e.target.value)}
+                        >
+                            {currencies.map((currency) => (
+                                <option key={currency} value={currency}>
+                                    {currency}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <button
+                        className="bg-gray-600 text-white px-4 py-3 rounded-lg shadow-sm hover:bg-gray-700 transition flex items-center justify-center gap-2"
+                        onClick={swapCurrencies}
+                    >
+                        🔄 Swap Currencies
+                    </button>
+
+                    <div className="flex flex-col bg-gray-50 p-4 rounded-lg border">
+                        <label className="text-lg font-semibold text-left text-gray-700">To Currency:</label>
+                        <select
+                            className="p-3 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={targetCurrency}
+                            onChange={(e) => setTargetCurrency(e.target.value)}
+                        >
+                            {currencies.map((currency) => (
+                                <option key={currency} value={currency}>
+                                    {currency}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex gap-4 justify-center mt-4">
+                        <button
+                            className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-700 transition"
+                            onClick={convertCurrency}
+                        >
+                            🔍 Convert
+                        </button>
+                        <button
+                            className="bg-gray-600 text-white px-6 py-3 rounded-lg shadow-md hover:bg-gray-700 transition"
+                            onClick={() => router.push("/exchange-rates")}
+                        >
+                            📊 View Rates
+                        </button>
+                    </div>
+
+                    {conversionResult !== null && (
+                        <div className="mt-6 p-4 bg-gray-100 text-gray-800 rounded-lg shadow-sm text-lg font-bold">
+                            {amount} {baseCurrency} = {conversionResult.toFixed(2)} {targetCurrency}
+                        </div>
+                    )}
+
+                    {history.length > 0 && (
+                        <div className="mt-6 bg-gray-50 p-4 rounded-lg shadow-sm border">
+                            <h2 className="text-xl font-semibold mb-3 text-gray-700">🕘 Recent Conversions</h2>
+                            <ul className="text-left text-gray-800">
+                                {history.map((entry, index) => (
+                                    <li key={index} className="py-1 border-b last:border-none">
+                                        {entry.amount} {entry.base} → {entry.result.toFixed(2)} {entry.target}
+                                    </li>
+                                ))}
+                            </ul>
+                            <button
+                                className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-red-700 transition"
+                                onClick={clearHistory}
+                            >
+                                ❌ Clear History
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+
+    );
 }
