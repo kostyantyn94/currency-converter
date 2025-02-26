@@ -1,7 +1,7 @@
-import type React from "react"
+import type {ReactNode, SelectHTMLAttributes, OptionHTMLAttributes} from "react"
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-    children: React.ReactNode
+interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+    children: ReactNode
 }
 
 export function Select({ children, className, ...props }: SelectProps) {
@@ -15,7 +15,7 @@ export function Select({ children, className, ...props }: SelectProps) {
     )
 }
 
-export function SelectItem({ children, ...props }: React.OptionHTMLAttributes<HTMLOptionElement>) {
+export function SelectItem({ children, ...props }: OptionHTMLAttributes<HTMLOptionElement>) {
     return <option {...props}>{children}</option>
 }
 

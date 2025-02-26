@@ -1,10 +1,14 @@
 import { useEffect } from "react";
+import { Dispatch } from "react";
 
-export const useConversionHistory = (dispatch: React.Dispatch<any>) => {
+type CurrencyAction =
+    | { type: "INIT_HISTORY"; payload: { base: string; target: string; amount: number; result: number }[] };
+
+export const useConversionHistory = (dispatch: Dispatch<CurrencyAction>) => {
     useEffect(() => {
         const storedHistory = localStorage.getItem("conversionHistory");
         if (storedHistory) {
-            dispatch({ type: "SET_RATES", payload: JSON.parse(storedHistory) });
+            dispatch({ type: "INIT_HISTORY", payload: JSON.parse(storedHistory) });
         }
-    }, []);
+    }, [dispatch]);
 };

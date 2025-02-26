@@ -1,6 +1,11 @@
+import {State} from "@/reducers/currencyReducer";
+import { Dispatch } from "react";
+
 const API_KEY = process.env.NEXT_PUBLIC_EXCHANGE_API_KEY
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 const FULL_API_URL = `${API_URL}/${API_KEY}/latest/`
+
+type CurrencyAction = { type: "SET_CONVERSION_RESULT"; payload: number | null } | { type: "ADD_TO_HISTORY"; payload: { base: string; target: string; amount: number; result: number } }
 
 export const fetchExchangeRates = async (baseCurrency: string) => {
     try {
@@ -39,7 +44,7 @@ export const sortRates = (rates: [string, number][], sortType: string) => {
     })
 }
 
-export const convertCurrency = (state: any, dispatch: React.Dispatch<any>) => {
+export const convertCurrency = (state: State, dispatch: Dispatch<CurrencyAction>) => {
     if (!state.rates[state.targetCurrency] || !state.amount) return;
 
     const result = state.amount * state.rates[state.targetCurrency];

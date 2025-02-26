@@ -27,6 +27,7 @@ type Action =
     | { type: "SET_CONVERSION_RESULT"; payload: number | null }
     | { type: "SET_RATES"; payload: Record<string, number> }
     | { type: "SWAP_CURRENCIES" }
+    | { type: "INIT_HISTORY"; payload: { base: string; target: string; amount: number; result: number }[]}
     | { type: "ADD_TO_HISTORY"; payload: { base: string; target: string; amount: number; result: number } }
     | { type: "CLEAR_HISTORY" };
 
@@ -41,11 +42,11 @@ export const currencyReducer = (state: State, action: Action): State => {
         case "SET_CONVERSION_RESULT":
             return { ...state, conversionResult: action.payload };
         case "SET_RATES":
-            const newCurrencies = Object.keys(action.payload).filter(key => isNaN(Number(key)));
+            const newCurrencies = Object.keys(action.payload);
             return {
                 ...state,
                 rates: action.payload,
-                currencies: newCurrencies.length > 0 ? newCurrencies : state.currencies,
+                currencies: newCurrencies,
             };
         case "SWAP_CURRENCIES":
             return {
@@ -54,8 +55,12 @@ export const currencyReducer = (state: State, action: Action): State => {
                 targetCurrency: state.baseCurrency,
                 conversionResult: null,
             };
+        case "INIT_HISTORY":
+            return {
+                ...state, history: action.payload.slice(-5)
+            }
         case "ADD_TO_HISTORY":
-            const newHistory = [...state.history, action.payload];
+            const newHistory = [action.payload, ...state.history].slice(0, 5);
             localStorage.setItem("conversionHistory", JSON.stringify(newHistory));
             return { ...state, history: newHistory };
         case "CLEAR_HISTORY":
